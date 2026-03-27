@@ -4,6 +4,11 @@ import random
 from pathlib import Path
 import os
 
+import pandas as pd
+from sklearn import tree
+from sklearn.tree import plot_tree
+import matplotlib.pyplot as plt
+
 def who_ui():
     return ui.page_fluid(
 
@@ -12,7 +17,8 @@ def who_ui():
         ui.layout_columns(
             ui.div(
                 {"class": "grid-container"},
-                ui.output_ui("grid_perso")
+                ui.output_ui("grid_perso"),
+                ui.output_plot("plot_arbre")
             ),
 
             ui.div(
@@ -127,7 +133,12 @@ def who_server(input, output, session):
         ["non", "oui", "non", "non", "non"],
         ["non", "non", "oui", "non", "oui"]
     ]
-
+    classes = [f"Personne {i}" for i in range(1, 10)]
+    df = pd.DataFrame(reponses, columns=questions)
+    df = df.replace({'oui': 1, 'non': 0})
+    model = tree.DecisionTreeClassifier(criterion='entropy')
+    model.fit(df, classes)
+    
     @output
     @render.text
     def value():
@@ -165,3 +176,20 @@ def who_server(input, output, session):
         for i in range(NB_PERSO):
             perso[i]["elimine"].set(False)
         return "Nouvelle partie commencée"
+    
+    @output
+    @render.plot
+    def plot_arbre():
+        fig, ax = plt.subplots(figsize=(10, 8))
+        
+        tree.plot_tree(
+            model,
+            feature_names=questions,
+            class_names=classes,
+            filled=True,
+            rounded=True,
+            fontsize=5,
+            ax=ax
+        )
+        ax.set_title("Stratégie de l'ordinateur")
+        return fig
